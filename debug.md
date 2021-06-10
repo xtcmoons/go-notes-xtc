@@ -15,6 +15,6 @@ dumped SSA to ~/workspace/ssa.html
 dumped SSA to ./ssa.html
 
 ```
-![]("./images/ssa.png")
+![]("https://github.com/xtcmoons/go-notes-xtc/blob/main/images/ssa.png")
 
 上述命令会在当前文件夹下生成一个ssa.html文件，打开这个文件就能看到汇编优化的每一个步骤
