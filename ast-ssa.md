@@ -40,7 +40,7 @@ make(chan int)
 ```
 可以将上面字符串分成几个部分  <code>make</code>, <code>chan </code>, <code>int </code> 和括号，分解文本的过程就是[词法分析](https://en.wikipedia.org/wiki/Lexical_analysis), 词法分析是将字符串序列转换为标记(token)序列的过程.
 
-Go 语言的词法元素相对来说还是比较简单，使用这种巨大的 switch/case 进行词法解析也比较方便和顺手，早期的 Go 语言虽然使用 lex 这种工具来生成词法解析器，但是最后还是使用 Go 来实现词法分析器，用自己写的词法分析器来解析自己8。
+Go 语言的词法元素相对来说还是比较简单，使用这种巨大的 switch/case 进行词法解析也比较方便和顺手，早期的 Go 语言虽然使用 lex 这种工具来生成词法解析器，但是最后还是使用 Go 来实现词法分析器，用自己写的词法分析器来解析自己。
 
 ## 语法分析
 [语法分析](https://en.wikipedia.org/wiki/Parsing) 是根据某种特定的形式文法(Grammar) 对Token 序列构成的输入文本
