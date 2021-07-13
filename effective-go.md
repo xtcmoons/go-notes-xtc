@@ -39,10 +39,11 @@ if owner != user {
   * Go 中约定使用驼峰记法 `MixedCaps` 或 `mixedCaps` 而非下划线的方式对多个单词名称进行命名。
   
 
-* ### 分号 Semicolons
+### 4. 分号 Semicolons
   * Go 的分号，不会出现在源码中。取而代之，词法分析器会使用一条简单的规则来自动插入分号，因此源码中基本不用分号来。
   
-### 4 控制结构 Control structures
+
+### 5 控制结构 Control structures
 
 * If 
   * In Go a simple if looks like this:
@@ -76,8 +77,8 @@ f, err := os.Open(name)
     * 在初始化中与其类型相应的值才能赋予 v, 且在次声明中至少另有一个变量时新声明的
   
 
-  * For
-    * 三种形式的for语句，只有一种需要分号
+* ### For
+  * 三种形式的for语句，只有一种需要分号 
   
 ```go
 // Like a C for
@@ -99,13 +100,108 @@ for condition { }
 
 // 如同 C 的 for(;;) 循环
 for { }
+
 ```
 
+  * Go 没有逗号操作符，而 ++ 和 -- 为语句而非表达式。因此，若你想要在for中使用多个变量，应采用平行赋值的方式
 
+```go
+// Reverse a
+for i, j := 0, len(a)-1; i < j; i, j = i+1, j-1 {
+	a[i], a[j] = a[j], a[i]
+}
+```
 
+   * Switch 
+        * 表达式无需为常量或者整数
+        * switch 并不会自动下溯，但 case 可通过逗号分隔列举相同的处理条件
+        * 
+    
+  * 类型选择  Type switch
+    * switch 也可以用于判断接口变量的动态类型，如 类型选择 通过圆括号中的关键字 type 使用类型断言语法。
 
+```go
+var t interface{}
+t = functionOfSomeType()
+switch t := t.(type) {
+default:
+	fmt.Printf("unexpected type %T", t)       // %T 输出 t 是什么类型
+case bool:
+	fmt.Printf("boolean %t\n", t)             // t 是 bool 类型
+case int:
+	fmt.Printf("integer %d\n", t)             // t 是 int 类型
+case *bool:
+	fmt.Printf("pointer to boolean %t\n", *t) // t 是 *bool 类型
+case *int:
+	fmt.Printf("pointer to integer %d\n", *t) // t 是 *int 类型
+}
+```
 
+### 6. 函数 Functions
+  * 多返回值 Multiple return values
+```go
+func (file *File) Write(b []byte) (n int, err error)
+```
+  * 命名结果参数 Named result parameters
+    * Go 函数的返回值或结果 "形参" 可被命名，并作为常量使用。 
+    命名后，一旦函数开始执行，它们就是初始化相应的零值。
+    
+```go
+func ReadFull(r Reader, buf []byte) (n int, err error) {    
+	for len(buf) > 0 && err == nil {
+		var nr int
+        nr, err = r.Read(buf)
+        n += nr
+        buf = buf[nr:]
+    }
+    return
+}
 
+```
+  * Defer
+    * 推迟执行函数
+
+```go
+// Contents 将文件的内容作为字符串返回。
+func Contents(filename string) (string, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()  // f.Close 会在我们结束后运行。
+
+	var result []byte
+	buf := make([]byte, 100)
+	for {
+		n, err := f.Read(buf[0:])
+		result = append(result, buf[0:n]...) // append 将在后面讨论。
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return "", err  // 我们在这里返回后，f 就会被关闭。
+		}
+	}
+	return string(result), nil // 我们在这里返回后，f 就会被关闭。
+}
+```
+  * 被推迟函数的实参（如果该函数为方法则还包括接收者）在推迟执行时就会被求值， 而不是在调用执行时才求值。
+
+```go
+for i := 0; i < 5; i++ {
+	defer fmt.Printf("%d ", i)
+}
+```
+
+  * 被推迟的函数按照后进先出（LIFO）的顺序执行，因此以上代码在函数返回时会打印 4 3 2 1 0。
+
+```go
+
+```
+
+### 7. 数据 Data
+  * new 分配 Allocation with new
+    * 它不会初始化内存，只会将内存置零。也就是说，new(T) 会为类型为 T 的新项分配已置零的内存空间， 并返回它的地址，也就是一个类型为 *T 的值。用 Go 的术语来说，它返回一个指针， 该指针指向新分配的，类型为 T 的零值。
 
 
 
