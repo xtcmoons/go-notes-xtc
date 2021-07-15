@@ -200,15 +200,339 @@ for i := 0; i < 5; i++ {
 ```
 
 ### 7. 数据 Data
-  * new 分配 Allocation with new
+  * ### new 分配 Allocation with new
     * 它不会初始化内存，只会将内存置零。也就是说，new(T) 会为类型为 T 的新项分配已置零的内存空间， 并返回它的地址，也就是一个类型为 *T 的值。用 Go 的术语来说，它返回一个指针， 该指针指向新分配的，类型为 T 的零值。
+    * “零值属性” 是传递性的。
+
+```go
+type SyncedBuffer struct {
+	lock    sync.Mutex
+	buffer  bytes.Buffer
+}
+```
+
+```go
+p := new(SyncedBuffer)  // type *SyncedBuffer
+var v SyncedBuffer      // type  SyncedBuffer
+```
+
+  * ### 构造函数与复合字面量 Constructors and composite literals
+    * 代码过于冗长。我们可通过复合字面量来简化它
+    
+```go
+func NewFile(fd int, name string) *File {
+	if fd < 0 {
+		return nil
+	}
+	f := File{fd, name, nil, 0}
+	return &f
+}
+```
+
+  * 请注意，返回一个局部变量的地址完全没有问题，这点与 C 不同。复合字面的字段必须按顺序全部列出。
+  * 表达式 `new(File)` 和 `&File{}` 是等价的。
+  
+  * ### 使用 `make` 分配  Allocation with make
+    * 它只用于创建切片、映射和信道，并返回类型为 T（而非 *T）的一个已初始化 （而非置零）的值。
+    * 对于切片、映射和信道，make 用于初始化其内部的数据结构并准备好将要使用的值。
+
+```go
+var p *[]int = new([]int)       // 分配切片结构；*p == nil；基本没用
+var v  []int = make([]int, 100) // 切片 v 现在引用了一个具有 100 个 int 元素的新数组
+
+// 没必要的复杂：
+var p *[]int = new([]int)
+*p = make([]int, 100, 100)
+
+// 习惯用法：
+v := make([]int, 100)
+
+```
+
+  * ### 数组 Arrays
+  * 主要用作切片的构件。
+  * 以下为数组在 Go 和 C 中的主要区别。在 Go 中，
+    * 数组是值。将一个数组赋予另一个数组会复制其所有元素。
+    * 特别地，若将某个数组传入某个函数，它将接收到该数组的一份副本而非指针。
+    * 数组的大小是其类型的一部分。类型 [10]int 和 [20]int 是不同的。
+    
+  * ### 切片 Slices
+   * Go 中的大部分数组编程都是通过切片来完成的。
+   * 切片保存了对底层数组的引用，若你将某个切片赋予另一个切片，它们会引用同一个数组。
+   * 若某个函数将一个切片作为参数传入，则它对该切片元素的修改对调用者而言同样可见， 这可以理解为传递了底层数组的指针。
 
 
+  * ### 映射 Maps
+    * 映射，其键可以是是任何相等性操作符支持的类型，如 整数，浮点数，复数，字符串，指针，接口(只要动态类型支持相等性判断)
+    切片不能用作映射键，因为它们的相等性还没定义。
+      
+   * 与切片一样，映射也是引用类型。
+   * 若试图通过映射中不存在的键来取值，就会返回与该映射中项的类型对应的零值。
+   * 有时你需要区分莫项是 `不存在`  或 `零值`,  你可以使用多重赋值的形式来分辨这种情况, 可以称为 "逗号 ok"
+```go
+var seconds int
+var ok bool
+seconds, ok = timeZone[tz]
+```
+
+### 7. 初始化 Initialization
+
+* ### 常量
+  * Go 中的常量就是不变量. 它们在编译时创建，即便它们可能是函数中的局部变量。
+  * 常量只能是数字、字符（符文）、字符串或布尔值。
+  * 由于编译时的限制， 定义它们的表达式必须也是可被编译器求值的常量表达式。  
+    
+* ### 变量  Variables
+  * 变量的初始化与常量类似，但其初始值也可以是在运行时才被计算的一般表达式。
+
+* ### init 函数  The init function
+  * 每个源文件都可以通过定义自己的无参数 init 函数来设置一些必要的状态。
+  * 其实每个文件都可以拥有多个 init 函数。   
+  * 只有该包中的所以变量声明都通过初始化求值后 init 函数才会调用
+  * 而那些 init 函数只有在所有已导入包都被初始化后才会被求值 
+    
+### 8. 方法 Methods
+* 指针 vs .值 Pointers vs .Values
+  * 可以为任何类型定义方法
+    
+### 9. 接口和其他类型  Interfaces and other types
+* ### 接口
+  * 每种类型都能实现多个接口。
+    
+```go
+type Sequence []int
+
+// Methods required by sort.Interface.
+// sort.Interface 所需的方法。
+func (s Sequence) Len() int {
+    return len(s)
+}
+func (s Sequence) Less(i, j int) bool {
+    return s[i] < s[j]
+}
+func (s Sequence) Swap(i, j int) {
+    s[i], s[j] = s[j], s[i]
+}
+
+// Method for printing - sorts the elements before printing.
+// 用于打印的方法 - 在打印前对元素进行排序。
+func (s Sequence) String() string {
+    sort.Sort(s)
+    str := "["
+    for i, elem := range s {
+        if i > 0 {
+            str += " "
+        }
+        str += fmt.Sprint(elem)
+    }
+    return str + "]"
+}
 
 
+```
+  
+* ### 类型转换  Conversions
+```go
 
+type Sequence []int
 
+// // 用于打印的方法 - 在打印前对元素进行排序。
+func (s Sequence) String() string {
+	sort.IntSlice(s).Sort()
+	return fmt.Sprint([]int(s))
+}
 
+```
 
+* ### 接口转换与类型断言  Interface conversions and type assertions
+  * 类型选择 是类型转换的一种形式
+    
+```go
+type Stringer interface {
+	String() string
+}
 
+var value interface{} // 调用者提供的值。
+switch str := value.(type) {
+case string:
+	return str
+case Stringer:
+	return str.String()
+}
 
+```
+  * 类型断言接受一个接口值， 并从中提取指定的明确类型的值。其语法借鉴自类型选择开头的子句，但它需要一个明确的类型， 而非 type 关键字：
+```go
+value.(typeName)
+```
+
+```go
+str := value.(string)
+
+```
+  * 若类型断言失败，str 将继续存在且为字符串类型，但它将拥有零值，即空字符串。
+
+```go
+if str, ok := value.(string); ok {
+	return str
+} else if str, ok := value.(Stringer); ok {
+	return str.String()
+}
+```
+
+* ### 接口和方法 Interfaces and methods
+  * 几乎任何类型都能添加方法，因此几乎任何类型都能满足一个接口。
+    
+### 10. 空白标识符 The blank identifier
+  * 用空白标识符来代替该变量可避免创建无用的变量，并能清楚地表明该值将被丢弃。
+```go
+if _, err := os.Stat(path); os.IsNotExist(err) {
+	fmt.Printf("%s does not exist\n", path)
+}
+```
+ * 未使用的导入和变量
+```go
+package main
+
+import (
+    "fmt"
+    "io"
+    "log"
+    "os"
+)
+
+var _ = fmt.Printf // For debugging; delete when done. // 用于调试，结束时删除。
+var _ io.Reader    // For debugging; delete when done. // 用于调试，结束时删除。
+
+func main() {
+    fd, err := os.Open("test.go")
+    if err != nil {
+        log.Fatal(err)
+    }
+    // TODO: use fd.
+    _ = fd
+}
+
+```
+
+  * 未副作用而导入 Import for side effect
+    * 有时导入某个包只是为了其副作用， 而没有任何明确的使用。只需将该包重命名为空白标识符：
+    
+```go
+import _ "net/http/pprof"
+
+```
+  * 若只需要判断某个类型是否是实现了某个接口，而不需要实际使用接口本身 （可能是错误检查部分），就使用空白标识符来忽略类型断言的值：
+```go
+if _, ok := val.(json.Marshaler); ok {
+	fmt.Printf("value %v of type %T implements json.Marshaler\n", val, val)
+}
+
+```
+
+### 11. 内嵌 Embedding 
+```go
+type Reader interface {
+	Read(p []byte) (n int, err error)
+}
+
+type Writer interface {
+	Write(p []byte) (n int, err error)
+}
+
+```
+
+```go
+// ReadWriter is the interface that combines the Reader and Writer interfaces.
+type ReadWriter interface {
+	Reader
+	Writer
+}
+
+```
+
+ * 同样的基本想法可以应用在结构体中
+```go
+// ReadWriter stores pointers to a Reader and a Writer.
+// It implements io.ReadWriter.
+type ReadWriter struct {
+	*Reader  // *bufio.Reader
+	*Writer  // *bufio.Writer
+}
+```
+  * 当内嵌一个类型时，该类型的方法会成为外部类型的方法， 但当它们被调用时，该方法的接收者是内部类型，而非外部的。
+```go
+type Job struct {
+	Command string
+	*log.Logger
+}
+```
+
+```go
+job.Log("starting now...")
+
+```
+
+### 12. 并发 Concurrency
+  * 通过通信共享内存 Share by communicating
+```text
+Do not communicate by sharing memory. instead, share monery by communicating.
+
+不要通过共享内存来通信，而应通过通信来共享内存。
+```
+
+  * Goroutines
+    * 在 Go 中，函数字面都是闭包：其实现在保证了函数内引用变量的生命周期与函数的活动时间相同。
+
+  * 信道 Channels
+```go
+ci := make(chan int)            // unbuffered channel of integers
+cj := make(chan int, 0)         // unbuffered channel of integers
+cs := make(chan *os.File, 100)  // buffered channel of pointers to Files
+
+```
+  * 用法
+```go
+c := make(chan int)  // 分配一个信道
+// 在 goroutine 中启动排序。当它完成后，在信道上发送信号。
+go func() {
+	list.Sort()
+	c <- 1  // 发送信号，什么值无所谓。
+}()
+doSomethingForAWhile()
+<-c   // 等待排序结束，丢弃发来的值。
+
+```
+ * 接收者在收到数据前会一直阻塞。若信道是不带缓冲的，那么在接收者收到值前， 发送者会一直阻塞；若信道是带缓冲的，则发送者直到值被复制到缓冲区才开始阻塞； 若缓冲区已满，发送者会一直等待直到某个接收者取出一个值为止。
+
+```go
+var sem = make(chan int, MaxOutstanding)
+
+func handle(r *Request) {
+	sem <- 1 // 等待活动队列清空。
+	process(r)  // 可能需要很长时间。
+	<-sem    // 完成；使下一个请求可以运行。
+}
+
+func Serve(queue chan *Request) {
+	for {
+		req := <-queue
+		go handle(req)  // 无需等待 handle 结束。
+	}
+}
+
+```
+
+  * 信道中的信道 Channels of channels
+    * Go 最重要的特性就是信道是一等值，它可以被分配并像其它值到处传递。 这种特性通常被用来实现安全、并行的多路分解。
+    
+  * ### 并行化 Parallelization
+
+### 13. 错误 Error
+  * 按照约定，错误的类型通常为 error，这是一个内建的简单接口。
+```go
+type error interface {
+	Error() string
+}
+
+```
